@@ -1,0 +1,118 @@
+<!-- In real use, this should be committed with user.properties instead of build.properties, users
+     should copy build.properties skeleton to user.properties and fill in there own... -->
+<project name="DemoSpringMVC" default="build" basedir=".">
+
+	<!-- Reads a set of properties from the file build.properties -->
+	<property file="build.properties"/>
+	
+	<!-- This denotes the directory where the source code lies (java files / actions). -->
+	<property name="src" value="src" />
+
+	<!-- JSP directory -->
+	<property name="jsp-src" value="jsp"/>
+
+	<!-- The whole build is placed here -->
+	<property name="build" value="build" />
+	
+	<!-- Place your dependent libraries here -->
+	<property name="lib" value="lib" />
+
+	<!-- Location to pack up the WAR file structure -->
+	<property name="web-build" value="${build}/web-build" />
+
+	<!-- The WEB-INF dir within teh web structure -->	
+	<property name="web" value="${web-build}/WEB-INF"/>
+	
+	<!-- Where the classes for the web will go before making the war -->
+	<property name="web-classes" value="${web}/classes"/>
+	
+	<!-- JSP destination -->
+	<property name="jsp-build" value="${web}/jsp"/>
+
+	<!-- this is the path for compiling, we include the lib dir -->
+	<path id="classpath">
+		<fileset dir="${lib}" includes="**/*.jar" />
+	</path>
+
+	<!-- We compile the classes into the web build -->
+	<target name="compile">
+		<javac srcdir="${src}" destdir="${web-classes}">
+			<classpath refid="classpath" />
+		</javac>
+	</target>
+
+	<!-- create destination directories -->
+	<target name="prepare-web">
+		<mkdir dir="${web-build}"/>
+		<mkdir dir="${web}"/>
+		<mkdir dir="${web}/lib"/>
+		<mkdir dir="${web}/classes"/>
+		<mkdir dir="${jsp-build}"/>
+	</target>
+
+	<!-- Start the web structure by using the src web-inf as a base -->
+	<target name="compile-web">
+		
+	</target>
+
+	<target name="clean" description="Removes previous build">
+		<delete verbose="true" includeemptydirs="true">
+			<fileset dir="${build}" includes="**/*"/>
+		</delete>
+		<delete file="${warname}.war"/>
+	</target>
+
+	<!-- copy everything into the web build before war'ing -->
+	<target name="copy-to-web">
+		<copy todir="${web}">
+			<fileset dir="WEB-INF" />
+		</copy>
+		<copy todir="${web}/lib">
+			<fileset dir="${lib}"/>
+		</copy>
+		<copy todir="${jsp-build}">
+			<fileset dir="${jsp-src}"/>
+		</copy>
+		<copy todir="${web-build}">
+		    <fileset dir=".">
+			    <include name="**/*.html"/>
+			</fileset>
+		</copy>
+	</target>
+		
+        <target name="jar">
+	    <jar destfile="${warname}.war" basedir="${web-build}"/>
+        </target>
+
+	<target name="build">
+		<antcall target="clean"/>
+		<antcall target="prepare-web"/>
+		<antcall target="compile"/>
+		<antcall target="copy-to-web"/>
+		<antcall target="jar"/>
+	</target>
+
+	<!-- deploy to local tomcat/jboss -->
+	<target name="deploy-local">
+		<copy file="${warname}.war" todir="${jboss.local}"/>
+	</target>
+
+	<!-- deploy to prod by ftp'ing -->
+        <target name="deploy-prod">
+	    <ftp server="${ftp.server}" port="${ftp.port}"
+	       remotedir="${ftp.remotedir}"
+	       userid="${ftp.user}"
+	       password="${ftp.pass}"
+	       depends="yes">
+	        <fileset file="${warname}.war"/>
+	    </ftp>
+	</target>
+	
+	<!-- convenience method for development cycle -->
+	<target name="quick">
+		<antcall target="build"/>
+		<antcall target="deploy-local"/>
+	</target>
+	
+</project>
+
